@@ -61,6 +61,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				cyber: {
+					primary: 'hsl(var(--cyber-primary))',
+					secondary: 'hsl(var(--cyber-secondary))',
+					warning: 'hsl(var(--cyber-warning))',
+					danger: 'hsl(var(--cyber-danger))',
+					success: 'hsl(var(--cyber-success))'
 				}
 			},
 			borderRadius: {

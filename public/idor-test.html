@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDOR Test Environment - بيئة اختبار ثغرة IDOR</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #ff6b6b;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #a8a8a8;
+            font-size: 1.1rem;
+        }
+        
+        .warning {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid #ff6b6b;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .warning h3 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h3 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .user-card {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .user-id {
+            color: #4caf50;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .user-info {
+            margin-top: 10px;
+            color: #e0e0e0;
+        }
+        
+        .test-url {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            color: #4ecdc4;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        
+        .button {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 25px;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+        }
+        
+        .vulnerable {
+            border-color: #ff6b6b !important;
+            background: rgba(255, 107, 107, 0.1) !important;
+        }
+        
+        .safe {
+            border-color: #4caf50 !important;
+            background: rgba(76, 175, 80, 0.1) !important;
+        }
+        
+        .api-endpoint {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .endpoint-title {
+            color: #ffc107;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a8a8a8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ IDOR Test Environment</h1>
+            <p>بيئة اختبار ثغرة الوصول المباشر غير المصرح للكائنات</p>
+        </div>
+        
+        <div class="warning">
+            <h3>⚠️ تحذير مهم</h3>
+            <p>هذه بيئة تعليمية لفهم ثغرة IDOR. لا تستخدم هذه التقنيات على مواقع لا تملكها.</p>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h3>🎯 نقاط النهاية المعرضة للخطر</h3>
+                
+                <div class="api-endpoint vulnerable">
+                    <div class="endpoint-title">GET /api/user/{id}</div>
+                    <div class="test-url" id="userEndpoint">
+                        https://example.com/api/user/1
+                    </div>
+                    <p>يعرض معلومات المستخدم بناءً على المعرف</p>
+                    <button class="button" onclick="testEndpoint('user', 1)">اختبار المستخدم 1</button>
+                    <button class="button" onclick="testEndpoint('user', 2)">اختبار المستخدم 2</button>
+                </div>
+                
+                <div class="api-endpoint vulnerable">
+                    <div class="endpoint-title">GET /api/document/{id}</div>
+                    <div class="test-url" id="docEndpoint">
+                        https://example.com/api/document/1
+                    </div>
+                    <p>يعرض الوثائق الخاصة</p>
+                    <button class="button" onclick="testEndpoint('document', 1)">اختبار الوثيقة 1</button>
+                    <button class="button" onclick="testEndpoint('document', 5)">اختبار الوثيقة 5</button>
+                </div>
+                
+                <div class="api-endpoint vulnerable">
+                    <div class="endpoint-title">GET /api/order/{id}</div>
+                    <div class="test-url" id="orderEndpoint">
+                        https://example.com/api/order/1
+                    </div>
+                    <p>يعرض تفاصيل الطلب</p>
+                    <button class="button" onclick="testEndpoint('order', 1)">اختبار الطلب 1</button>
+                    <button class="button" onclick="testEndpoint('order', 3)">اختبار الطلب 3</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>🔒 نقاط النهاية الآمنة</h3>
+                
+                <div class="api-endpoint safe">
+                    <div class="endpoint-title">GET /api/secure/user/{uuid}</div>
+                    <div class="test-url">
+                        https://example.com/api/secure/user/a1b2c3d4-e5f6
+                    </div>
+                    <p>يستخدم UUID بدلاً من الأرقام المتسلسلة</p>
+                    <button class="button" onclick="testSecureEndpoint('user')">اختبار آمن</button>
+                </div>
+                
+                <div class="api-endpoint safe">
+                    <div class="endpoint-title">GET /api/profile (with token)</div>
+                    <div class="test-url">
+                        https://example.com/api/profile
+                    </div>
+                    <p>يتطلب توكن مصادقة ولا يعتمد على معرف خارجي</p>
+                    <button class="button" onclick="testSecureEndpoint('profile')">اختبار آمن</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>🔍 أمثلة على تقنيات الاختبار</h3>
+            
+            <div style="margin: 20px 0;">
+                <h4 style="color: #4ecdc4; margin-bottom: 10px;">1. تغيير المعرف في URL</h4>
+                <div class="test-url">
+                    ❌ https://example.com/api/user/1 → https://example.com/api/user/2
+                </div>
+                <p style="margin: 10px 0;">جرب تغيير الرقم في نهاية URL للوصول لبيانات مستخدمين آخرين</p>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <h4 style="color: #4ecdc4; margin-bottom: 10px;">2. تعديل معاملات POST</h4>
+                <div class="test-url">
+                    ❌ {"user_id": 1} → {"user_id": 2}
+                </div>
+                <p style="margin: 10px 0;">غير معرف المستخدم في بيانات الطلب</p>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <h4 style="color: #4ecdc4; margin-bottom: 10px;">3. اختبار القيم السالبة والكبيرة</h4>
+                <div class="test-url">
+                    ❌ /api/user/-1, /api/user/999999, /api/user/0
+                </div>
+                <p style="margin: 10px 0;">جرب قيم غير متوقعة قد تكشف عن بيانات حساسة</p>
+            </div>
+        </div>
+        
+        <div id="results" class="results" style="display: none;">
+            <h3 style="color: #4ecdc4; margin-bottom: 15px;">📊 نتائج الاختبار</h3>
+            <div id="resultsContent"></div>
+        </div>
+        
+        <div class="footer">
+            <p>🔐 تم تطويرها لأغراض تعليمية | Cypher Buddy Suite</p>
+            <p>استخدم هذه المعرفة بمسؤولية وأخلاق</p>
+        </div>
+    </div>
+
+    <script>
+        // بيانات تجريبية للمحاكاة
+        const userData = {
+            1: { name: "أحمد محمد", email: "ahmed@example.com", role: "admin", phone: "123456789" },
+            2: { name: "فاطمة علي", email: "fatima@example.com", role: "user", phone: "987654321" },
+            3: { name: "محمد سالم", email: "mohammed@example.com", role: "moderator", phone: "555666777" }
+        };
+        
+        const documentData = {
+            1: { title: "تقرير مالي سري", content: "بيانات مالية حساسة...", owner: "أحمد محمد" },
+            2: { title: "خطة استراتيجية", content: "خطة الشركة للعام القادم...", owner: "فاطمة علي" },
+            5: { title: "كلمات مرور الموظفين", content: "قائمة بكلمات مرور جميع الموظفين...", owner: "محمد سالم" }
+        };
+        
+        const orderData = {
+            1: { id: 1, total: 250.50, items: "لابتوب + ماوس", customer: "أحمد محمد" },
+            2: { id: 2, total: 89.99, items: "كتاب + قلم", customer: "فاطمة علي" },
+            3: { id: 3, total: 1500.00, items: "جهاز كمبيوتر", customer: "محمد سالم" }
+        };
+        
+        function testEndpoint(type, id) {
+            const resultsDiv = document.getElementById('results');
+            const resultsContent = document.getElementById('resultsContent');
+            
+            resultsDiv.style.display = 'block';
+            
+            let result = '';
+            let isVulnerable = false;
+            
+            if (type === 'user' && userData[id]) {
+                result = `
+                    <div class="user-card vulnerable">
+                        <div class="user-id">🚨 ثغرة IDOR مكتشفة! - معرف المستخدم: ${id}</div>
+                        <div class="user-info">
+                            <p><strong>الاسم:</strong> ${userData[id].name}</p>
+                            <p><strong>البريد الإلكتروني:</strong> ${userData[id].email}</p>
+                            <p><strong>الدور:</strong> ${userData[id].role}</p>
+                            <p><strong>الهاتف:</strong> ${userData[id].phone}</p>
+                        </div>
+                        <p style="color: #ff6b6b; margin-top: 10px;"><strong>خطر:</strong> تم الوصول لبيانات مستخدم آخر بدون تصريح!</p>
+                    </div>
+                `;
+                isVulnerable = true;
+            } else if (type === 'document' && documentData[id]) {
+                result = `
+                    <div class="user-card vulnerable">
+                        <div class="user-id">🚨 ثغرة IDOR مكتشفة! - معرف الوثيقة: ${id}</div>
+                        <div class="user-info">
+                            <p><strong>العنوان:</strong> ${documentData[id].title}</p>
+                            <p><strong>المحتوى:</strong> ${documentData[id].content}</p>
+                            <p><strong>المالك:</strong> ${documentData[id].owner}</p>
+                        </div>
+                        <p style="color: #ff6b6b; margin-top: 10px;"><strong>خطر:</strong> تم الوصول لوثيقة سرية!</p>
+                    </div>
+                `;
+                isVulnerable = true;
+            } else if (type === 'order' && orderData[id]) {
+                result = `
+                    <div class="user-card vulnerable">
+                        <div class="user-id">🚨 ثغرة IDOR مكتشفة! - معرف الطلب: ${id}</div>
+                        <div class="user-info">
+                            <p><strong>المجموع:</strong> ${orderData[id].total} ريال</p>
+                            <p><strong>المنتجات:</strong> ${orderData[id].items}</p>
+                            <p><strong>العميل:</strong> ${orderData[id].customer}</p>
+                        </div>
+                        <p style="color: #ff6b6b; margin-top: 10px;"><strong>خطر:</strong> تم الوصول لطلب عميل آخر!</p>
+                    </div>
+                `;
+                isVulnerable = true;
+            } else {
+                result = `
+                    <div class="user-card safe">
+                        <div class="user-id">✅ لم يتم العثور على بيانات - معرف: ${id}</div>
+                        <p style="color: #4caf50;">الاستجابة: 404 - غير موجود أو 403 - غير مصرح</p>
+                    </div>
+                `;
+            }
+            
+            // إضافة تحليل الثغرة
+            if (isVulnerable) {
+                result += `
+                    <div style="background: rgba(255, 107, 107, 0.1); border: 1px solid #ff6b6b; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                        <h4 style="color: #ff6b6b; margin-bottom: 10px;">🔍 تحليل الثغرة</h4>
+                        <ul style="color: #e0e0e0; line-height: 1.6;">
+                            <li>تم الوصول للبيانات بدون التحقق من الصلاحيات</li>
+                            <li>النظام لا يتحقق من ملكية المستخدم للمورد</li>
+                            <li>يمكن تعديل معرف الكائن للوصول لبيانات أخرى</li>
+                        </ul>
+                        <div style="margin-top: 10px;">
+                            <strong style="color: #ffc107;">الحلول المقترحة:</strong>
+                            <ul style="color: #e0e0e0; margin-top: 5px;">
+                                <li>تنفيذ فحص الصلاحيات على مستوى الكائن</li>
+                                <li>استخدام UUID بدلاً من الأرقام المتسلسلة</li>
+                                <li>التحقق من ملكية المستخدم للمورد</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            resultsContent.innerHTML = result;
+        }
+        
+        function testSecureEndpoint(type) {
+            const resultsDiv = document.getElementById('results');
+            const resultsContent = document.getElementById('resultsContent');
+            
+            resultsDiv.style.display = 'block';
+            
+            const result = `
+                <div class="user-card safe">
+                    <div class="user-id">🔒 نقطة نهاية آمنة - ${type}</div>
+                    <div class="user-info">
+                        <p><strong>الاستجابة:</strong> 200 - نجح الطلب</p>
+                        <p><strong>البيانات:</strong> بيانات المستخدم الحالي فقط</p>
+                        <p><strong>الحماية:</strong> يتم التحقق من التوكن والصلاحيات</p>
+                    </div>
+                    <p style="color: #4caf50; margin-top: 10px;"><strong>آمن:</strong> لا يمكن الوصول لبيانات مستخدمين آخرين</p>
+                </div>
+                
+                <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid #4caf50; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                    <h4 style="color: #4caf50; margin-bottom: 10px;">✅ تحليل الحماية</h4>
+                    <ul style="color: #e0e0e0; line-height: 1.6;">
+                        <li>يتم التحقق من التوكن قبل الوصول للبيانات</li>
+                        <li>النظام يعرض بيانات المستخدم الحالي فقط</li>
+                        <li>لا يعتمد على معرفات خارجية قابلة للتلاعب</li>
+                        <li>يطبق مبدأ "أقل امتياز" في الوصول</li>
+                    </ul>
+                </div>
+            `;
+            
+            resultsContent.innerHTML = result;
+        }
+        
+        // تحديث URLs في الوقت الفعلي
+        document.addEventListener('DOMContentLoaded', function() {
+            const baseUrl = window.location.origin;
+            document.getElementById('userEndpoint').textContent = baseUrl + '/api/user/1';
+            document.getElementById('docEndpoint').textContent = baseUrl + '/api/document/1';
+            document.getElementById('orderEndpoint').textContent = baseUrl + '/api/order/1';
+        });
+    </script>
+</body>
+</html>
